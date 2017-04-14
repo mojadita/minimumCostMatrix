@@ -6,47 +6,82 @@ import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 public class OptimizableCostMatrixDouble extends CostMatrixDouble {
 
+	private List<Node> theList;
+	private Node root;
+
 	public class Node {
 
-		public final Node parent;
-		public final int row, col;
-		public final double cost;
-		public final int hash;
-		public int numChildren;
+		private final Node parent;
+		private final int col, row;
+		private final double cost;
+		private final Node[] children;
+		private int n_children;
 		
-		public Node(final Node parent, final int row, final int col, double cost) {
+		public Node(final Node parent, final int row, final int col) {
 			this.parent = parent; 
-			this.row = row; 
 			this.col = col; 
-			this.cost = cost;
-			this.hash = (parent != null ? parent.hash : 0) + row*dim + col;
-			this.numChildren = 0;  // for next process.
-			if (parent != null) parent.numChildren++;
+			this.row = row; 
+			this.cost = parent != null 
+					? parent.getCost() + getValue(row, col) 
+					: 0.0;
+			this.children = new Node[dim];
+			this.n_children = 0;
+			if (parent != null) {
+				parent.n_children++;
+				parent.children[row] = this;
+			}
 		}
 		
-		public Node() {
-			this(null, -1, -1, 0.0);
-		}
-		
-		@Override
-		public int hashCode() {
-			return hash;
+		public double getCost() {
+			return cost;
 		}
 
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) return true;
-			if (!(obj instanceof Node)) return false;
-			Node other = (Node) obj;
-			if (parent != other.parent) return false;
-			if (row != other.row) return false;
-			if (col != other.col) return false;
-			return true;
+		public int getN_children() {
+			return n_children;
 		}
+
+		public void setN_children(int n_children) {
+			this.n_children = n_children;
+		}
+
+		public Node getParent() {
+			return parent;
+		}
+
+		public int getRow() {
+			return row;
+		}
+
+		public int getCol() {
+			return col;
+		}
+
+		public Node[] getChildren() {
+			return children;
+		}
+		
+		private String toString(Node node) {
+			if (node == root) return "ROOT";
+			StringBuffer sb = new StringBuffer();
+			if (node.parent != null) {
+				sb.append(toString(node.parent));
+				sb.append(", ");
+			}
+			return sb.toString() + "<" + node.getRow() + ", " + node.getCol() + ": " + node.getCost() + ">";
+		}
+		
+		@Override
+		public String toString() {
+			if (this == root) return "ROOT";
+			return "{" + toString(this) + "}";
+		}
+		
 		public boolean isFinal() {
 			return col == dim;
 		}
@@ -54,37 +89,83 @@ public class OptimizableCostMatrixDouble extends CostMatrixDouble {
 		
 	public OptimizableCostMatrixDouble(int dim) {
 		super(dim);
+		init_process();
 	}
 	
-	private HashSet<Node> set;
-	private Node root;
-	
 	private void init_process() {
-		set = new HashSet<Node>();
-		set.add(root = new Node());
+		theList = new ArrayList<Node>();
+		theList.add(root = new Node(null, -1, -1));
 	}
 	
 	private Node process_one() {
 		double minCost = Double.MAX_VALUE;
 		int row=-1, col=-1;
 		Node prnt = null;
-		for(Node p: set) { // for all viable parents
-			if (p.col + p.numChildren) p.
+		ArrayList<Node> newList = new ArrayList<Node>();
+		for(Node n: theList) { // for all viable parents
+//			System.out.println("Visiting node " + n);
+			int candidates = 0;
 			for (int r = 0; r < dim; r++) { // test all rows
-				// test if already have a node at row r
-				for (Node v = p; v != root; v = v.parent)
-					if (v.row == r) continue; // already visited.
-				int c = p.col+1; // next column
-				double cost = p.cost + values[r][c];
-				if (cost < minCost) {
-					prnt = p;
-					row = r; 
-					col = p.col+1;
-					minCost = 
+//				System.out.println("  Row #" + r);
+				if (n.row == r) {// this node's row. 
+//					System.out.println("    row is this node's row");
+					continue;
 				}
+				if (n.children[r] != null) { // already added a node in this row.
+//					System.out.println("    already have a child at this node's row");
+					continue;
+				}
+				
+				{	// search up in the tree for a node at row r
+					Node v;
+					for (v = n; v != root; v = v.parent)
+						if (v.row == r) break; // already visited.
+					if (v != root) {
+//						System.out.println("    already have a parent at this node's row");
+						continue; // a node already visited this row.
+					}
+				} // block
+				
+				candidates++;
+				int c = n.col+1; // next column
+				double cost = n.getCost() + values[r][c];
+//				System.out.print("    candidate at row=" + r + ", col="+ c + ", cost=" + cost);
+				if (cost < minCost) {
+//					System.out.print(" is a CANDIDATE");
+					prnt = n; row = r; col = c;
+					minCost = cost;
+				}
+//				System.out.println();
 			}
+//			System.out.println("  candidates left, after scanning: " + candidates);
+			if (candidates > 0) 
+				newList.add(n);
+		}
+		
+		theList = newList;
+		if (prnt != null) {
+			Node result = new Node(prnt,row, col);
+//			System.out.println("Candidate is " + result);
+			newList.add(result);
+			return result;
 		}
 		return null;
 	}
 
+	public static void main(String[] args) {
+		Random r = new Random();
+		OptimizableCostMatrixDouble m = new OptimizableCostMatrixDouble(10);
+		for (int row = 0; row < m.dim; row++)
+			for (int col = 0; col < m.dim; col++)
+				m.setValue(row, col, r.nextDouble());
+		m.init_process();
+		Node sol;
+		int npos = 0;
+		do {
+			sol = m.process_one(); npos++;
+		} while ( sol.getCol() < m.dim - 1);
+		System.out.println(m);
+		System.out.println("Solution is " + sol);
+		System.out.println("positions searched: " + npos);
+	}
 }
