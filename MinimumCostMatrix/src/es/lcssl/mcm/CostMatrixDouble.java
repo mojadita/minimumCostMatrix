@@ -1,11 +1,11 @@
 package es.lcssl.mcm;
 
 public class CostMatrixDouble {
-	
+
 	protected final int dim;
 	protected final double[][] values;
 	private String fmt = "%f";
-	
+
 	public CostMatrixDouble(int dim) {
 		this.dim = dim;
 		this.values = new double[dim][];
@@ -13,11 +13,11 @@ public class CostMatrixDouble {
 			this.values[i] = new double[dim];
 		}
 	}
-	
+
 	protected String format(final double val) {
 		return String.format(fmt, val);
 	}
-	
+
 	public String getFmt() {
 		return fmt;
 	}
@@ -30,22 +30,18 @@ public class CostMatrixDouble {
 		return dim;
 	}
 
-	public String getFormat() {
-		return fmt;
-	}
-	
 	public void setFormat(final String fmt) {
 		this.fmt = fmt;
 	}
-	
+
 	public double getValue(int row, int col) {
 		return values[row][col];
 	}
-	
+
 	public void setValue(int row, int col, double val) {
 		values[row][col] = val;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer("{");
