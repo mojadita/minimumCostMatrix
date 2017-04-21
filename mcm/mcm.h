@@ -50,49 +50,75 @@ namespace MCM {
         const T             cost;
         mc_node<T>**const   children;
 
-        mc_node(sq_matrix<T>& matrix, const mc_node<T> *parent, int row, int col):
+        mc_node(sq_matrix<T>& matrix,
+                mc_node<T> * const parent,
+                int row):
+
                 matrix(matrix),
                 parent(parent),
-                row(row), col(col),
+                row(row),
+                col(parent
+                        ? parent->col+1
+                        : -1),
                 cost(parent
                         ? parent->cost + matrix[row][col]
                         : T()),
-                children(new mc_node*[matrix.dim])
+                children(new mc_node<T>*[matrix.dim])
         {
+            std::cout << this << ": " << __func__ << "(matrix, " << parent << ", " << row << ");\n";
             for (int i = 0; i < matrix.dim; i++)
                 children[i] = 0;
+            std::cout << this << ": creating " << matrix.dim << " children\n";
             if (parent) {
                 assert(parent->children[row] == 0);
+                std::cout << this << ": adding this to parent's children\n";
                 parent->children[row] = this;
             }
         }
 
         ~mc_node() {
-            std::cout << "deleting " << this << ", child of " << parent;
             for(int i = 0; i < matrix.dim; i++)
                 if (children[i]) delete children[i];
-            delete children;
+            delete [] children;
+
+            std::cout << "deleting " << this;
+            if (parent) std::cout << ", child of " << parent;
+            std::cout << std::endl;
         }
+        void print(std::ostream& out, const int indent = 0);
     };
 
     template <typename T>
     class mc_matrix: public sq_matrix<T> {
 
-        std::vector<mc_node<T> > frontier;
+        std::vector<mc_node<T>*> frontier;
+        mc_node<T> * root;
 
     public:
 
-        mc_node<T> * const root;
 
-        mc_matrix(int dim):sq_matrix<T>(dim),root(0) {}
+        mc_matrix(int dim):sq_matrix<T>(dim) {
+            std::cout << this << ": " << __func__ << "(" << dim << ");\n";
+            frontier.push_back(root = new mc_node<T>(*this, 0, -1));
+        }
 
-        ~mc_matrix() { if (root) delete root; }
+        ~mc_matrix() { delete root; }
+
+        void reset() {
+            frontier.clear();
+            delete root;
+            frontier.push_back(root = new mc_node<T>(*this, 0, -1));
+        }
+
+        mc_node<T> *const getRoot() { return root; }
+
     };
 
 } /* MCM */
 
 template <typename T>
-std::ostream& operator<<(std::ostream& out, MCM::sq_matrix<T>& it) {
+std::ostream& operator<<(std::ostream& out, const MCM::sq_matrix<T>& it)
+{
     out << "{";
     for (int row = 0; row < it.dim; row++) {
         if (row) out << ",\n ";
@@ -106,4 +132,21 @@ std::ostream& operator<<(std::ostream& out, MCM::sq_matrix<T>& it) {
     out << "}";
     return out;
 }
+
+template <typename T>
+std::ostream& operator<<(std::ostream& out, const MCM::mc_node<T>& node)
+{
+    if (node.parent == 0) return out << "@";
+    return out << *node.parent << "=>" << node.row << "(v=" << node.matrix[node.row][node.col] <<";c=" << node.cost << ")";
+}
+
+template <typename T>
+void MCM::mc_node<T>::print(std::ostream& out, const int indent)
+{
+    for (int i = 0; i < indent; i++) out << " ";
+    out << *this << std::endl;
+    for (int i = 0; i < matrix.dim; i++)
+        if (children[i]) children[i]->print(out, indent + 1);
+}
+
 #endif /* _MCM_H */
