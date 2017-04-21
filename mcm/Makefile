@@ -12,4 +12,4 @@ clean:
 mcm: $(mcm_objs)
 	g++ $(LDFLAGS) -o $@ $(mcm_objs) $(mcm_libs)
 
-mcm.o: mcm.cc mcm.h
+mcm.o main.o: mcm.cc mcm.h

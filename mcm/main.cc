@@ -7,7 +7,9 @@
 
 int main()
 {
-    MCM::matrix<double> mat(10);
-    std::cout << mat;
-    std::cout << std::endl;
+    MCM::sq_matrix<double> mat(10);
+    for (int row = 0; row < mat.dim; row++)
+        for (int col = 0; col < mat.dim; col++)
+            mat[row][col] = !row || !col ? 1 : mat[row-1][col] + mat[row][col-1];
+    std::cout << mat << std::endl;
 }
