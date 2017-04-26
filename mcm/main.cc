@@ -9,29 +9,31 @@
 int main()
 {
     MCM::mc_matrix<int> mat(8);
-    srand(time(0));
+
+    srand(time(0)); // intialize random number generator.
 
     for (int row = 0; row < mat.dim; row++)
         for (int col = 0; col < mat.dim; col++)
-            mat[row][col] = random() % 100; //!row || !col ? 1 : mat[row-1][col] + mat[row][col-1];
+            mat[row][col] =
+                random() % 10000;
+                //!row || !col ? 1 : mat[row-1][col] + mat[row][col-1];
 
-    std::cout << mat << std::endl;
+    //std::cout << mat << std::endl; // print original matrix.
 
-    const MCM::mc_node<int>* res;
+    const MCM::mc_node<int>* res; // results.
     int n = 1;
-
     do {
-        res = mat.get_mcm();
+        res = mat.get_mcm(); // get one approx
         n++;
-        //std::cout << "candidate: " << *res << std::endl;
+        //std::cout << "CANDIDATE: " << *res << std::endl;
     } while (res && res->col != mat.dim - 1);
 
-    mat.getRoot()->print(std::cout);
+    // mat.getRoot()->print(std::cout); // print the whole tree.
 
-    std::cout << mat << std::endl;
-    std::cout << "SOLUTION: " << *res << std::endl;
-    std::cout << "REVISED: " << n << " posiciones\n";
-    std::cout << "FRONTIER: " << mat.frontier->size() << std::endl;
+    std::cout << mat << std::endl; // print the matrix again.
+    std::cout << "SOLUTION: " << *res << std::endl; // the solution
+    std::cout << "REVISED: " << n << " positions\n";
+    std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
 
     return 0;
 }

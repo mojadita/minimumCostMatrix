@@ -7,7 +7,7 @@
 #define _MCM_H
 
 #include <iostream>
-#include <vector>
+#include <set>
 #include <cassert>
 
 namespace MCM {
@@ -24,11 +24,13 @@ namespace MCM {
         const int dim;
 
         sq_matrix(int dim):dim(dim),array(new T*[dim]) {
+            //std::cout << this << ": " << __func__ << std::endl;
             for (int i = 0; i < dim; i++)
                 array[i] = new T[dim];
         }
 
         ~sq_matrix() {
+            //std::cout << this << ": " << __func__ << std::endl;
             for (int i = 0; i < dim; i++)
                 delete[] array[i];
             delete[] array;
@@ -74,45 +76,46 @@ namespace MCM {
         }
 
         ~mc_node() {
+            //std::cout << this << ": " << __func__ << std::endl;
             for(int i = 0; i < matrix.dim; i++)
                 if (children[i]) delete children[i];
             delete [] children;
 
             if (parent) parent->children[row] = 0;
 
-            //std::cout << "deleting " << this;
+            //std::cout << this << ": " << "deleting " << this;
             //if (parent) std::cout << ", child of " << parent;
             //std::cout << std::endl;
         }
-        void print(std::ostream& out, const int indent = 0) const;
+        void print(std::ostream& out) const;
     };
 
     template <typename T>
     class mc_matrix: public sq_matrix<T> {
 
     public:
-        std::vector<const mc_node<T>*>* frontier;
+        std::set<const mc_node<T>*> frontier;
         const mc_node<T> root;
 
 
-        mc_matrix(int dim):sq_matrix<T>(dim),frontier(new std::vector<const mc_node<T>*>()), root(*this) {
-            //std::cout << this << ": " << __func__ << "(" << dim << ");\n";
-            frontier->push_back(&root);
+        mc_matrix(int dim):sq_matrix<T>(dim), root(*this) {
+            // std::cout << this << ": " << __func__ << "(" << dim << ");\n";
+            frontier.insert(&root);
         }
 
         ~mc_matrix() {
-            delete frontier;
+            // std::cout << this << ": " << __func__ << "()\n";
         }
 
         void reset() {
+            frontier.clear();
+            frontier.insert(&root);
             for (int i = 0; i < this->dim; i++) {
                 if (root.children[i]) {
                     delete root.children[i];
                     root.children[i] = 0;
                 }
             }
-            frontier->clear();
-            frontier->push_back(&root);
         }
 
         const mc_node<T>* get_mcm();
@@ -148,25 +151,23 @@ std::ostream& operator<<(std::ostream& out, const MCM::mc_node<T>& node)
 }
 
 template <typename T>
-void MCM::mc_node<T>::print(std::ostream& out, const int indent) const
+void MCM::mc_node<T>::print(std::ostream& out) const
 {
-    for (int i = 0; i < indent; i++) out << " ";
     out << *this << std::endl;
     for (int i = 0; i < matrix.dim; i++)
-        if (children[i]) children[i]->print(out, indent + 1);
+        if (children[i]) children[i]->print(out);
 }
 
 template <typename T>
 const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
 {
-    std::vector<const MCM::mc_node<T>*>* new_frontier = new std::vector<const MCM::mc_node<T>*>();
     const MCM::mc_node<T>* new_parent = 0;
     int new_row;
     T new_cost;
 
     //std::cout << this << ": " << __func__ << "(): BEGIN\n";
 
-    for(typename std::vector<const MCM::mc_node<T>*>::iterator it = frontier->begin(); it != frontier->end(); it++) {
+    for(typename std::set<const MCM::mc_node<T>*>::iterator it = frontier.begin(); it != frontier.end(); it++) {
         const MCM::mc_node<T>* candidate_parent = *it;
 
         //std::cout << "Processing " << *candidate_parent << std::endl;
@@ -189,14 +190,12 @@ const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
                 new_cost = cost;
             }
         }
-        if (candidates)
-            new_frontier->push_back(candidate_parent);
+        if (!candidates)
+            frontier.erase(candidate_parent);
     }
-    delete frontier;
-    frontier = new_frontier;
     if (new_parent) {
         const MCM::mc_node<T>* result = new MCM::mc_node<T>(*this, new_parent, new_row);
-        frontier->push_back(result);
+        frontier.insert(result);
         return result;
     }
     return 0;
