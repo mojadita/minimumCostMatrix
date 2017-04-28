@@ -142,9 +142,9 @@ void MCM::mc_matrix<T>::print_element(std::ostream& out, const int row, const in
         for (p = sol; p; p = p->parent)
             if (p->row == row && p->col == col)
                 break;
-    out << (p ? "\033[32m<" : " ");
+    out << (p ? "\033[36m*" : " ");
     out << this->array[row][col];
-    out << (p ? ">\033[m" : " ");
+    out << (p ? "\033[m" : "");
 }
 
 template <typename T>
