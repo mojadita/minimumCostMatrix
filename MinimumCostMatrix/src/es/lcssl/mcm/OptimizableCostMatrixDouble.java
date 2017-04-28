@@ -99,14 +99,10 @@ public class OptimizableCostMatrixDouble extends CostMatrixDouble {
 		Node prnt = null;
 		ArrayList<Node> newList = new ArrayList<Node>();
 		for (Node n : theList) { // for all viable parents
-		// System.out.println("Visiting node " + n);
+			// System.out.println("Visiting node " + n);
 			int candidates = 0;
 			for (int r = 0; r < dim; r++) { // test all rows
-			// System.out.println("  Row #" + r);
-				if (n.row == r) {// this node's row.
-				// System.out.println("    row is this node's row");
-					continue;
-				}
+				// System.out.println("  Row #" + r);
 				if (n.children[r] != null) { // already added a node in this
 												// row.
 				// System.out.println("    already have a child at this node's row");
