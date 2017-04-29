@@ -97,13 +97,22 @@ namespace MCM {
     };
 
     template <typename T>
+    struct mc_node_less {
+        bool operator() (const mc_node<T>* x, const mc_node<T>* y) const {
+            if (x->col != y->col) return x->col > y->col;
+            if (x->cost != y->cost) return x->cost < y->cost;
+            return x < y;
+        }
+    };
+
+    template <typename T>
     class mc_matrix: public sq_matrix<T> {
 
         const mc_node<T> *sol;
 
     public:
 
-        std::set<const mc_node<T>*> frontier;
+        std::set<const mc_node<T>*, mc_node_less<T> > frontier;
         const mc_node<T> root;
 
         mc_matrix(int dim):sq_matrix<T>(dim),sol(0), root(*this) {

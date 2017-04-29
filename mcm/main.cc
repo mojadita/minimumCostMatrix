@@ -3,13 +3,12 @@
  * Date: Tue Apr 18 12:46:54 CEST 2017
  */
 
-#include "mcm.h"
 #include <cstdlib>
+#include "mcm.h"
 
 int main()
 {
-    MCM::mc_matrix<int> mat(10);
-    std::cout.width(2);
+    MCM::mc_matrix<int> mat(9);
 
     srand(time(0)); // intialize random number generator.
 
