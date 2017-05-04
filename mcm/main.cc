@@ -36,23 +36,28 @@ int main(int argc, char **argv)
                 //!row || !col ? 1 : mat[row-1][col] + mat[row][col-1];
 
     mat.reset();
-    std::cout << mat << std::endl; // print original matrix.
+    //std::cout << mat << std::endl; // print original matrix.
 
     const MCM::mc_node<int> *res, *res2; // results.
     int n = 0, nsol = 0;
     while ((res = mat.get_mcm()) && !mat.getSol()) {// get one approx
-        std::cout << "CANDIDATE1(" << ++n << "): " << *res << std::endl;
+        ++n;
+        //std::cout << "CANDIDATE1(" << n << "): " << *res << std::endl;
     }
 
-    std::cout << "SOLUTION(" << ++n << "): " << *res << std::endl; // the solution
-    std::cout << mat << std::endl; // print the matrix again.
-    std::cout << "REVISED: " << n << " positions\n";
-    std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
-    std::cout << "COST: " << res->cost << std::endl;
-    nsol++;
+    if (res) {
+        ++n;
+        std::cout << "SOLUTION(" << n << "): " << *res << std::endl; // the solution
+        std::cout << mat << std::endl; // print the matrix again.
+        std::cout << "REVISED: " << n << " positions\n";
+        std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
+        std::cout << "COST: " << res->cost << std::endl;
+        nsol++;
+    }
 
     while ((res2 = mat.get_mcm()) && (res2->cost <= res->cost)) {
-        std::cout << "CANDIDATE2(" << ++n << "): " << *res2 << std::endl;
+        ++n;
+        //std::cout << "CANDIDATE2(" << n << "): " << *res2 << std::endl;
         if (res2->isSol()) {
             std::cout << "SOLUTION(" << n << "): " << *res2 << std::endl; // the solution
             std::cout << mat << std::endl; // print the matrix again.
@@ -63,13 +68,15 @@ int main(int argc, char **argv)
         }
     }
 
-    if (res2) n++; // one more revised position.
+    if (res2) {
+        n++; // one more revised position.
 
+    }
     std::cout << "\n";
-    std::cout << "REVISED: " << ++n << " positions\n";
+    std::cout << "REVISED: " << n << " positions\n";
     std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
     std::cout << "FOUND: " << nsol << " solutions\n";
 
-    mat.getRoot()->print(std::cout); // print the whole tree.
+    //mat.getRoot()->print(std::cout); // print the whole tree.
     return 0;
 }

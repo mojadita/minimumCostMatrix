@@ -232,12 +232,12 @@ const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
     int new_row;
     T new_cost;
 
-    std::cout << this << ": " << __func__ << "(): \033[36mBEGIN\033[m max=" << max << std::endl;
+    //std::cout << this << ": " << __func__ << "(): \033[36mBEGIN\033[m max=" << max << std::endl;
 
     for(typename std::set<const MCM::mc_node<T>*>::iterator it = frontier.begin(); it != frontier.end(); it++) {
         const MCM::mc_node<T>* parent_candidate = *it;
 
-        std::cout << "  PROCESSING " << *parent_candidate << std::endl;
+        //std::cout << "  PROCESSING " << *parent_candidate << std::endl;
         int candidates = 0;
         for(int row = 0; row < this->dim; row++) {
             const MCM::mc_node<T>* n;
@@ -251,25 +251,25 @@ const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
             T cost = parent_candidate->cost + this->array[row][col];
             if (col == this->dim - 1 && cost < max) {
                 max = cost;
-                std::cout << "  MAX RESET TO " << max;
+                //std::cout << "  MAX RESET TO " << max;
             }
-            std::cout << "    TRYING r=" << row << "; c=" << col << "; cost=" << cost;
-            if (cost >= max) {
-                std::cout << " DISCARDED cost > " << max << std::endl;
+            //std::cout << "    TRYING r=" << row << "; c=" << col << "; cost=" << cost;
+            if (cost > max) {
+                //std::cout << " DISCARDED cost > " << max << std::endl;
                 continue;
             }
             candidates++;
             if (!new_parent || cost < new_cost) {
                 // we found a candidate.  Annotate its data.
-                std::cout
-                    << " \033[32mPOSSIBLE PARENT\033[m "
-                    << *parent_candidate << "; r=" << row
-                    << "; c=" << col << "; cost=" << cost;
+                //std::cout
+                    //<< " \033[32mPOSSIBLE PARENT\033[m "
+                    //<< *parent_candidate << "; r=" << row
+                    //<< "; c=" << col << "; cost=" << cost;
                 new_parent = parent_candidate;
                 new_row = row;
                 new_cost = cost;
             }
-            std::cout << std::endl;
+            //std::cout << std::endl;
         }
         if (!candidates) {
             to_delete.push_back(parent_candidate);
@@ -278,9 +278,9 @@ const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
     int sz = to_delete.size();
     for (int i = 0; i < sz; ++i) {
         if (!i) {
-            std::cout << "  ERASING\n";
+            //std::cout << "  ERASING\n";
         }
-        std::cout << "  \033[31mFRONTIER ERASING\033[m " << *to_delete[i] << std::endl;
+        //std::cout << "  \033[31mFRONTIER ERASING\033[m " << *to_delete[i] << std::endl;
         frontier.erase(to_delete[i]);
     }
     if (new_parent) {
@@ -289,10 +289,10 @@ const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
             frontier.insert(result);
         }
         sol = result->isSol() ? result : (const MCM::mc_node<T>*) 0;
-        std::cout << this << ": " << __func__ << "(): \033[36mRETURN\033[m " << *result << std::endl;
+        //std::cout << this << ": " << __func__ << "(): \033[36mRETURN\033[m " << *result << std::endl;
         return result;
     }
-    std::cout << this << ": " << __func__ << "(): \033[36mRETURN\033[m NULL\n";
+    //std::cout << this << ": " << __func__ << "(): \033[36mRETURN\033[m NULL\n";
     return 0;
 }
 
