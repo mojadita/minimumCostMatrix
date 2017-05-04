@@ -7,6 +7,7 @@
 #define _MCM_H
 
 #include <iostream>
+#include <vector>
 #include <set>
 #include <cassert>
 
@@ -115,7 +116,7 @@ namespace MCM {
         std::set<const mc_node<T>*, mc_node_less<T> > frontier;
         const mc_node<T> root;
 
-        mc_matrix(int dim):sq_matrix<T>(dim),sol(0), root(*this) {
+        mc_matrix(int dim):sq_matrix<T>(dim),sol(0),root(*this) {
             // std::cout << this << ": " << __func__ << "(" << dim << ");\n";
             frontier.insert(&root);
         }
@@ -189,22 +190,23 @@ std::ostream& operator<<(std::ostream& out, const MCM::sq_matrix<T>& it)
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const MCM::mc_node<T>& node)
 {
-    if (node.parent == 0)
-        return out
-            << ">"
-            << (node.matrix.frontier.count(&node) ? "*" : "");
-    return out
-        << *node.parent 
-        << "=> ["
-        << node.row
-        << ":"
-        << node.col
-        << "](v="
-        << node.matrix[node.row][node.col]
-        << ";c="
-        << node.cost
-        << ")"
-        << (node.matrix.frontier.count(&node) ? "*" : "");
+    if (node.parent) {
+        out << *node.parent
+            << "/["
+            << node.row
+            << ":"
+            << node.col
+            << "](v="
+            << node.matrix[node.row][node.col]
+            << ";c="
+            << node.cost
+            << ")";
+    } else {
+        out << "[]";
+    }
+    if (node.matrix.frontier.count(&node))
+        out << "*";
+    return out;
 }
 
 template <typename T>
@@ -219,15 +221,18 @@ template <typename T>
 const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
 {
     const MCM::mc_node<T>* new_parent = 0;
+    // at most we shall delete one node, so we use a pointer to it,
+    // or 0 in case no node has to be deleted.
+    const MCM::mc_node<T>* to_delete = 0;
     int new_row;
     T new_cost;
 
-    //std::cout << this << ": " << __func__ << "(): BEGIN\n";
+    std::cout << this << ": " << __func__ << "(): \033[36mBEGIN\033[m\n";
 
     for(typename std::set<const MCM::mc_node<T>*>::iterator it = frontier.begin(); it != frontier.end(); it++) {
         const MCM::mc_node<T>* parent_candidate = *it;
 
-        //std::cout << "Processing " << *parent_candidate << std::endl;
+        std::cout << "  PROCESSING " << *parent_candidate << std::endl;
         int candidates = 0;
         for(int row = 0; row < this->dim; row++) {
             const MCM::mc_node<T>* n;
@@ -240,24 +245,35 @@ const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
             candidates++;
             int col = parent_candidate->col+1;
             T cost = parent_candidate->cost + this->array[row][col];
+            std::cout << "    TRYING r=" << row << "; c=" << col << "; cost=" << cost;
             if (!new_parent || cost < new_cost) {
-                // we found a candidate.  Create it.
+                // we found a candidate.  Annotate its data.
+                std::cout
+                    << " \033[32mPOSSIBLE PARENT\033[m "
+                    << *parent_candidate << "; r=" << row
+                    << "; c=" << col << "; cost=" << cost;
                 new_parent = parent_candidate;
                 new_row = row;
                 new_cost = cost;
             }
+            std::cout << std::endl;
         }
         if (!candidates) {
-            //std::cout << "FRONTIER: ERASING " << *parent_candidate << std::endl;
-            frontier.erase(parent_candidate);
+            to_delete = parent_candidate;
         }
+    }
+    if (to_delete) {
+        std::cout << "  \033[31mFRONTIER ERASING\033[m " << *to_delete << std::endl;
+        frontier.erase(to_delete);
     }
     if (new_parent) {
         const MCM::mc_node<T>* result = new MCM::mc_node<T>(*this, new_parent, new_row);
         if (!result->isSol()) frontier.insert(result);
         sol = result->isSol() ? result : (const MCM::mc_node<T>*) 0;
+        std::cout << this << ": " << __func__ << "(): \033[36mRETURN\033[m " << *result << std::endl;
         return result;
     }
+    std::cout << this << ": " << __func__ << "(): \033[36mRETURN\033[m NULL\n";
     return 0;
 }
 
