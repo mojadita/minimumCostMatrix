@@ -16,7 +16,7 @@ int main(int argc, char **argv)
     char *p = NULL;
     time_t seed = time(0);
 
-    while((opt = getopt(argc, argv, "n:s:")) != EOF) {
+    while((opt = getopt(argc, argv, "n:s:")) != -1) {
         switch(opt) {
         case 'n': dim = strtol(optarg, &p, 10); break;
         case 's': seed = strtol(optarg, &p, 10); break;
@@ -57,7 +57,6 @@ int main(int argc, char **argv)
 
     while ((res2 = mat.get_mcm()) && (res2->cost <= res->cost)) {
         ++n;
-        //std::cout << "CANDIDATE2(" << n << "): " << *res2 << std::endl;
         if (res2->isSol()) {
             std::cout << "SOLUTION(" << n << "): " << *res2 << std::endl; // the solution
             std::cout << mat << std::endl; // print the matrix again.
@@ -65,6 +64,8 @@ int main(int argc, char **argv)
             std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
             std::cout << "COST: " << res->cost << std::endl;
             nsol++;
+        } else {
+            //std::cout << "CANDIDATE2(" << n << "): " << *res2 << std::endl;
         }
     }
 
