@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <inttypes.h>
 #include <getopt.h>
+#include <sys/time.h>
 #include "mcm.h"
 
 int dim = 9;
@@ -14,7 +15,10 @@ int main(int argc, char **argv)
 {
     int opt;
     char *p = NULL;
-    time_t seed = time(0);
+    struct timeval now;
+
+    gettimeofday(&now, 0);
+    int seed = now.tv_sec ^ now.tv_usec;
 
     while((opt = getopt(argc, argv, "n:s:")) != -1) {
         switch(opt) {
