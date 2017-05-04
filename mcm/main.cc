@@ -35,6 +35,7 @@ int main(int argc, char **argv)
                 random() % 90 + 10;
                 //!row || !col ? 1 : mat[row-1][col] + mat[row][col-1];
 
+    mat.reset();
     std::cout << mat << std::endl; // print original matrix.
 
     const MCM::mc_node<int> *res, *res2; // results.
