@@ -7,6 +7,7 @@
 #define _MCM_H
 
 #include <iostream>
+#include <vector>
 #include <set>
 #include <cassert>
 
@@ -81,14 +82,13 @@ namespace MCM {
         ~mc_node() {
             //std::cout << this << ": " << __func__ << std::endl;
             for(int i = 0; i < matrix.dim; i++)
-                if (children[i]) delete children[i];
+                if (children[i]) {
+                    delete children[i];
+                    if (children[i]) std::cout<< this << ": children[" << i << "] not null after delete\n";
+                }
             delete [] children;
 
             if (parent) parent->children[row] = 0;
-
-            //std::cout << this << ": " << "deleting " << this;
-            //if (parent) std::cout << ", child of " << parent;
-            //std::cout << std::endl;
         }
 
         void print(std::ostream& out) const;
@@ -109,15 +109,19 @@ namespace MCM {
     class mc_matrix: public sq_matrix<T> {
 
         const mc_node<T> *sol;
+        T                 max;
 
     public:
 
         std::set<const mc_node<T>*, mc_node_less<T> > frontier;
         const mc_node<T> root;
 
-        mc_matrix(int dim):sq_matrix<T>(dim),sol(0), root(*this) {
+        mc_matrix(int dim):sq_matrix<T>(dim),sol(0),root(*this) {
             // std::cout << this << ": " << __func__ << "(" << dim << ");\n";
             frontier.insert(&root);
+            max = 0;
+            for (int i = 0; i < dim; i++)
+                max += this->array[i][i];
         }
 
         //~mc_matrix() {
@@ -161,7 +165,9 @@ void MCM::mc_matrix<T>::reset()
 {
     frontier.clear();
     frontier.insert(&root);
+    max = T();
     for (int i = 0; i < this->dim; i++) {
+        max += this->array[i][i];
         if (root.children[i]) {
             delete root.children[i];
             root.children[i] = 0;
@@ -189,22 +195,23 @@ std::ostream& operator<<(std::ostream& out, const MCM::sq_matrix<T>& it)
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const MCM::mc_node<T>& node)
 {
-    if (node.parent == 0)
-        return out
-            << ">"
-            << (node.matrix.frontier.count(&node) ? "*" : "");
-    return out
-        << *node.parent 
-        << "=> ["
-        << node.row
-        << ":"
-        << node.col
-        << "](v="
-        << node.matrix[node.row][node.col]
-        << ";c="
-        << node.cost
-        << ")"
-        << (node.matrix.frontier.count(&node) ? "*" : "");
+    if (node.parent) {
+        out << *node.parent
+            << "/["
+            << node.row
+            << ":"
+            << node.col
+            << "](v="
+            << node.matrix[node.row][node.col]
+            << ";c="
+            << node.cost
+            << ")";
+    } else {
+        out << "[]";
+    }
+    if (node.matrix.frontier.count(&node))
+        out << "*";
+    return out;
 }
 
 template <typename T>
@@ -219,15 +226,18 @@ template <typename T>
 const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
 {
     const MCM::mc_node<T>* new_parent = 0;
+    // at most we shall delete one node, so we use a pointer to it,
+    // or 0 in case no node has to be deleted.
+    std::vector<const MCM::mc_node<T>*> to_delete;
     int new_row;
     T new_cost;
 
-    //std::cout << this << ": " << __func__ << "(): BEGIN\n";
+    //std::cout << this << ": " << __func__ << "(): \033[36mBEGIN\033[m max=" << max << std::endl;
 
     for(typename std::set<const MCM::mc_node<T>*>::iterator it = frontier.begin(); it != frontier.end(); it++) {
         const MCM::mc_node<T>* parent_candidate = *it;
 
-        //std::cout << "Processing " << *parent_candidate << std::endl;
+        //std::cout << "  PROCESSING " << *parent_candidate << std::endl;
         int candidates = 0;
         for(int row = 0; row < this->dim; row++) {
             const MCM::mc_node<T>* n;
@@ -237,27 +247,52 @@ const MCM::mc_node<T>* MCM::mc_matrix<T>::get_mcm()
             if (n->parent // we broke the loop (row found in ancestors chain)
                     || parent_candidate->children[row]) // row is the same as children[row] (already visited)
                 continue;
-            candidates++;
             int col = parent_candidate->col+1;
             T cost = parent_candidate->cost + this->array[row][col];
+            if (col == this->dim - 1 && cost < max) {
+                max = cost;
+                //std::cout << "  MAX RESET TO " << max;
+            }
+            //std::cout << "    TRYING r=" << row << "; c=" << col << "; cost=" << cost;
+            if (cost > max) {
+                //std::cout << " DISCARDED cost > " << max << std::endl;
+                continue;
+            }
+            candidates++;
             if (!new_parent || cost < new_cost) {
-                // we found a candidate.  Create it.
+                // we found a candidate.  Annotate its data.
+                //std::cout
+                    //<< " \033[32mPOSSIBLE PARENT\033[m "
+                    //<< *parent_candidate << "; r=" << row
+                    //<< "; c=" << col << "; cost=" << cost;
                 new_parent = parent_candidate;
                 new_row = row;
                 new_cost = cost;
             }
+            //std::cout << std::endl;
         }
         if (!candidates) {
-            //std::cout << "FRONTIER: ERASING " << *parent_candidate << std::endl;
-            frontier.erase(parent_candidate);
+            to_delete.push_back(parent_candidate);
         }
+    }
+    int sz = to_delete.size();
+    for (int i = 0; i < sz; ++i) {
+        if (!i) {
+            //std::cout << "  ERASING\n";
+        }
+        //std::cout << "  \033[31mFRONTIER ERASING\033[m " << *to_delete[i] << std::endl;
+        frontier.erase(to_delete[i]);
     }
     if (new_parent) {
         const MCM::mc_node<T>* result = new MCM::mc_node<T>(*this, new_parent, new_row);
-        if (!result->isSol()) frontier.insert(result);
+        if (!result->isSol()) {
+            frontier.insert(result);
+        }
         sol = result->isSol() ? result : (const MCM::mc_node<T>*) 0;
+        //std::cout << this << ": " << __func__ << "(): \033[36mRETURN\033[m " << *result << std::endl;
         return result;
     }
+    //std::cout << this << ": " << __func__ << "(): \033[36mRETURN\033[m NULL\n";
     return 0;
 }
 

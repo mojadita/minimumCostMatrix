@@ -4,13 +4,33 @@
  */
 
 #include <cstdlib>
+#include <inttypes.h>
+#include <getopt.h>
+#include <sys/time.h>
 #include "mcm.h"
 
-int main()
-{
-    MCM::mc_matrix<int> mat(9);
+int dim = 9;
 
-    srand(time(0)); // intialize random number generator.
+int main(int argc, char **argv)
+{
+    int opt;
+    char *p = NULL;
+    struct timeval now;
+
+    gettimeofday(&now, 0);
+    int seed = now.tv_sec ^ now.tv_usec;
+
+    while((opt = getopt(argc, argv, "n:s:")) != -1) {
+        switch(opt) {
+        case 'n': dim = strtol(optarg, &p, 10); break;
+        case 's': seed = strtol(optarg, &p, 10); break;
+        } /* switch */
+    } /* while */
+
+    MCM::mc_matrix<int> mat(dim);
+
+    std::cout << "SEED: " << seed << std::endl;
+    srandom(seed); // intialize random number generator.
 
     for (int row = 0; row < mat.dim; row++)
         for (int col = 0; col < mat.dim; col++)
@@ -19,39 +39,49 @@ int main()
                 random() % 90 + 10;
                 //!row || !col ? 1 : mat[row-1][col] + mat[row][col-1];
 
+    mat.reset();
     //std::cout << mat << std::endl; // print original matrix.
 
     const MCM::mc_node<int> *res, *res2; // results.
     int n = 0, nsol = 0;
     while ((res = mat.get_mcm()) && !mat.getSol()) {// get one approx
-        n++;
-        //std::cout << "CANDIDATE(" << n << "): " << *res << std::endl;
+        ++n;
+        //std::cout << "CANDIDATE1(" << n << "): " << *res << std::endl;
     }
 
-    std::cout << "SOLUTION: " << *res << std::endl; // the solution
-    std::cout << "REVISED: " << n << " positions\n";
-    std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
-    std::cout << "COST: " << res->cost << std::endl;
-    std::cout << mat << std::endl; // print the matrix again.
-    nsol++;
+    if (res) {
+        ++n;
+        std::cout << "SOLUTION(" << n << "): " << *res << std::endl; // the solution
+        std::cout << mat << std::endl; // print the matrix again.
+        std::cout << "REVISED: " << n << " positions\n";
+        std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
+        std::cout << "COST: " << res->cost << std::endl;
+        nsol++;
+    }
 
-    while ((res2 = mat.get_mcm()) && res2->cost <= res->cost) {
-        n++;
-        //std::cout << "CANDIDATE(" << n << "): " << *res2 << std::endl;
+    while ((res2 = mat.get_mcm()) && (res2->cost <= res->cost)) {
+        ++n;
         if (res2->isSol()) {
-            std::cout << "SOLUTION: " << *res2 << std::endl; // the solution
+            std::cout << "SOLUTION(" << n << "): " << *res2 << std::endl; // the solution
+            std::cout << mat << std::endl; // print the matrix again.
             std::cout << "REVISED: " << n << " positions\n";
             std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
             std::cout << "COST: " << res->cost << std::endl;
-            std::cout << mat << std::endl; // print the matrix again.
             nsol++;
+        } else {
+            //std::cout << "CANDIDATE2(" << n << "): " << *res2 << std::endl;
         }
     }
 
+    if (res2) {
+        n++; // one more revised position.
+
+    }
+    std::cout << "\n";
     std::cout << "REVISED: " << n << " positions\n";
     std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
-    std::cout << "ENCOUNTERED: " << nsol << " solutions\n";
+    std::cout << "FOUND: " << nsol << " solutions\n";
 
-    // mat.getRoot()->print(std::cout); // print the whole tree.
+    //mat.getRoot()->print(std::cout); // print the whole tree.
     return 0;
 }
