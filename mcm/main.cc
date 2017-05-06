@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     int max = 0; // maximum size of frontier.
 
     gettimeofday(&now, 0);
-    int seed = now.tv_sec ^ now.tv_usec;
+    int seed = now.tv_sec ^ now.tv_usec << 12;
 
     while((opt = getopt(argc, argv, "n:s:")) != -1) {
         switch(opt) {
