@@ -16,6 +16,7 @@ int main(int argc, char **argv)
     int opt;
     char *p = NULL;
     struct timeval now;
+    int max = 0; // maximum size of frontier.
 
     gettimeofday(&now, 0);
     int seed = now.tv_sec ^ now.tv_usec;
@@ -47,6 +48,7 @@ int main(int argc, char **argv)
     while ((res = mat.get_mcm()) && !mat.getSol()) {// get one approx
         ++n;
         //std::cout << "CANDIDATE1(" << n << "): " << *res << std::endl;
+        if (max < mat.frontier.size()) max = mat.frontier.size();
     }
 
     if (res) {
@@ -55,17 +57,20 @@ int main(int argc, char **argv)
         std::cout << mat << std::endl; // print the matrix again.
         std::cout << "REVISED: " << n << " positions\n";
         std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
+        std::cout << "FRONTIER(MAX): " << max << std::endl;
         std::cout << "COST: " << res->cost << std::endl;
         nsol++;
     }
 
     while ((res2 = mat.get_mcm()) && (res2->cost <= res->cost)) {
         ++n;
+        if (max < mat.frontier.size()) max = mat.frontier.size();
         if (res2->isSol()) {
             std::cout << "SOLUTION(" << n << "): " << *res2 << std::endl; // the solution
             std::cout << mat << std::endl; // print the matrix again.
             std::cout << "REVISED: " << n << " positions\n";
             std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
+            std::cout << "FRONTIER(MAX): " << max << std::endl;
             std::cout << "COST: " << res->cost << std::endl;
             nsol++;
         } else {
@@ -80,6 +85,7 @@ int main(int argc, char **argv)
     std::cout << "\n";
     std::cout << "REVISED: " << n << " positions\n";
     std::cout << "FRONTIER: " << mat.frontier.size() << " nodes\n";
+    std::cout << "FRONTIER(MAX): " << max << std::endl;
     std::cout << "FOUND: " << nsol << " solutions\n";
 
     //mat.getRoot()->print(std::cout); // print the whole tree.
