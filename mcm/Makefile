@@ -10,6 +10,6 @@ clean:
 	$(RM) $(targets) $(mcm_objs)
 
 mcm: $(mcm_objs)
-	g++ $(LDFLAGS) -o $@ $(mcm_objs) $(mcm_libs)
+	$(CXX) $(LDFLAGS) -o $@ $(mcm_objs) $(mcm_libs)
 
 mcm.o main.o: mcm.cc mcm.h
